@@ -39,7 +39,9 @@ public abstract class AbstractControllerAdvice {
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = requestAttributes.getRequest();
         HttpServletResponse response = requestAttributes.getResponse();
-        HandlerMethod handler = (HandlerMethod) request.getAttribute(HandlerMethod.class.getName());
+        //避免attribute被其它组件写入非HandlerMethod类型时发生ClassCastException
+        Object handlerAttribute = request.getAttribute(HandlerMethod.class.getName());
+        HandlerMethod handler = handlerAttribute instanceof HandlerMethod handlerMethod ? handlerMethod : null;
 
         //默认认为只要捕获到的，都要进行处理
         boolean hit = true;

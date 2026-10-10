@@ -77,7 +77,7 @@ public class GrNotVoidResponseBodyAdvice extends AbstractResponseBodyAdvice impl
 
         Method method = methodParameter.getMethod();
 
-        //method为空、返回值为void、非JSON，直接跳过
+        // method为空、返回值为void、非JSON，直接跳过
         if (Objects.isNull(method)
                 || method.getReturnType().equals(Void.TYPE)
                 || method.getReturnType().equals(Response.class)
@@ -86,23 +86,23 @@ public class GrNotVoidResponseBodyAdvice extends AbstractResponseBodyAdvice impl
             return false;
         }
 
-        //命中@ExcludeFromGracefulResponse注解，返回false，不处理
+        // 命中@ExcludeFromGracefulResponse注解，返回false，不处理
         if (adviceSupport.matchExcludeFromGracefulResponse(method)) {
             return false;
         }
 
-        //配置了例外包路径，则该路径下的controller都不再处理
+        // 配置了例外包路径，则该路径下的controller都不再处理
         List<String> excludePackages = properties.getExcludePackages();
         if (!CollectionUtils.isEmpty(excludePackages)) {
-            // 获取请求所在类的的包名
-            String packageName = method.getDeclaringClass().getPackage().getName();
+            // 获取请求所在类的的包名，getPackageName()在默认包下返回空串，避免getPackage()返回null导致NPE
+            String packageName = method.getDeclaringClass().getPackageName();
             if (excludePackages.stream().anyMatch(item -> ANT_PATH_MATCHER.match(item, packageName))) {
                 logger.debug("Graceful Response:匹配到excludePackages例外配置，跳过:packageName={},", packageName);
                 return false;
             }
         }
 
-        //配置了例外的返回类型，则不处理
+        // 配置了例外的返回类型，则不处理
         Set<Class<?>> excludeReturnTypes = properties.getExcludeReturnTypes();
         if (!CollectionUtils.isEmpty(excludeReturnTypes)
                 && excludeReturnTypes.contains(method.getReturnType())) {
@@ -129,7 +129,7 @@ public class GrNotVoidResponseBodyAdvice extends AbstractResponseBodyAdvice impl
             return false;
         }
 
-        //配置了异常放行，就不会再封装了
+        // 配置了异常放行，就不会再封装了
         Exception releaseException = (Exception) requestAttributes.getAttribute(ReleaseExceptionHandlerExceptionResolver.RELEASE_EXCEPTION_KEY,
                 RequestAttributes.SCOPE_REQUEST);
         if (Objects.nonNull(releaseException)

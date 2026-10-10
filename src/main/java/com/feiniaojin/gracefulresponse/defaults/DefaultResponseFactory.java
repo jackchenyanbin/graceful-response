@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.Constructor;
 import java.util.Objects;
 
 /**
@@ -28,6 +29,16 @@ public class DefaultResponseFactory implements ResponseFactory {
 
     private static final Integer RESPONSE_STYLE_1 = 1;
 
+    /**
+     * 缓存自定义Response的构造器，避免每次响应都进行反射查找
+     */
+    private volatile Constructor<?> cachedConstructor;
+
+    /**
+     * cachedConstructor对应的类全限定名，用于配置变化时重新解析
+     */
+    private volatile String cachedConstructorClassName;
+
     @Resource
     private ResponseStatusFactory responseStatusFactory;
 
@@ -40,8 +51,7 @@ public class DefaultResponseFactory implements ResponseFactory {
             String responseClassFullName = properties.getResponseClassFullName();
             //配置了Response的全限定名，即自定义了Response，用配置的进行返回
             if (StringUtils.hasLength(responseClassFullName)) {
-                Object newInstance = Class.forName(responseClassFullName).getConstructor().newInstance();
-                return (Response) newInstance;
+                return (Response) resolveConstructor(responseClassFullName).newInstance();
             } else {
                 //没有配Response的全限定名，则创建DefaultResponse
                 return generateDefaultResponse();
@@ -51,9 +61,27 @@ public class DefaultResponseFactory implements ResponseFactory {
         }
     }
 
+    /**
+     * 解析并缓存自定义Response的无参构造器
+     *
+     * @param responseClassFullName Response类的全限定名
+     * @return 缓存的构造器
+     */
+    private Constructor<?> resolveConstructor(String responseClassFullName)
+            throws ClassNotFoundException, NoSuchMethodException {
+        Constructor<?> constructor = this.cachedConstructor;
+        if (constructor != null && responseClassFullName.equals(this.cachedConstructorClassName)) {
+            return constructor;
+        }
+        constructor = Class.forName(responseClassFullName).getConstructor();
+        this.cachedConstructor = constructor;
+        this.cachedConstructorClassName = responseClassFullName;
+        return constructor;
+    }
+
     private Response generateDefaultResponse() {
         Integer responseStyle = properties.getResponseStyle();
-        //默认的Response style，5.0以上是Style0，5.0（包括5.0）之后是Style1
+        //默认的Response style，未配置responseStyle时默认使用Style1，responseStyle==0使用Style0，responseStyle==1使用Style1
         if (Objects.isNull(responseStyle)) {
             return new DefaultResponseImplStyle1();
         }

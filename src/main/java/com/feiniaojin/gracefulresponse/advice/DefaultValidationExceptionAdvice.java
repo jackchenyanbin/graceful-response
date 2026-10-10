@@ -84,9 +84,9 @@ public class DefaultValidationExceptionAdvice extends AbstractControllerAdvice
     public Response process(HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex) {
         ResponseStatus responseStatus = null;
         if (ex instanceof BindException exception) {
-            responseStatus = this.handleBindException(exception);
+            responseStatus = this.handleBindException(exception, handler);
         } else if (ex instanceof ConstraintViolationException exception) {
-            responseStatus = this.handleConstraintViolationException(exception);
+            responseStatus = this.handleConstraintViolationException(exception, handler);
         }
         Response grRresponse;
         if (Objects.nonNull(responseStatus)) {
@@ -113,13 +113,13 @@ public class DefaultValidationExceptionAdvice extends AbstractControllerAdvice
      * @param e
      * @return
      */
-    private ResponseStatus handleBindException(BindException e) {
+    private ResponseStatus handleBindException(BindException e, @Nullable Object handler) {
         BindingResult bindingResult = e.getBindingResult();
         List<ObjectError> allErrors = bindingResult.getAllErrors();
         String msg = allErrors.stream().map(DefaultMessageSourceResolvable::getDefaultMessage).collect(Collectors.joining(";"));
         String code;
 
-        ValidationStatusCode validateStatusCode = this.findValidationStatusCode(e);
+        ValidationStatusCode validateStatusCode = this.findValidationStatusCode(e, handler);
         if (Objects.nonNull(validateStatusCode)) {
             //找这个注解实在太费劲了，保存起来后面再用吧
             RequestContextHolder.currentRequestAttributes().setAttribute(VALIDATION_STATUS_CODE,
@@ -148,9 +148,9 @@ public class DefaultValidationExceptionAdvice extends AbstractControllerAdvice
      * @param e
      * @return
      */
-    private ValidationStatusCode findValidationStatusCode(BindException e) {
+    private ValidationStatusCode findValidationStatusCode(BindException e, @Nullable Object handler) {
 
-        ValidationStatusCode validateStatusCode = this.findValidationStatusCodeInController();
+        ValidationStatusCode validateStatusCode = this.findValidationStatusCodeInController(handler);
 
         if (Objects.nonNull(validateStatusCode)) {
             return validateStatusCode;
@@ -265,33 +265,40 @@ public class DefaultValidationExceptionAdvice extends AbstractControllerAdvice
 
     /**
      * 当前Controller方法
+     * 优先复用已经解析好的handler，避免在异常处理阶段重新执行HandlerMapping
      *
+     * @param handler 异常处理方法中已获取的handler
      * @return
      * @throws Exception
      */
-    private Method currentControllerMethod() {
+    private Method currentControllerMethod(@Nullable Object handler) {
+        if (handler instanceof HandlerMethod handlerMethod) {
+            return handlerMethod.getMethod();
+        }
         try {
             RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
             ServletRequestAttributes sra = (ServletRequestAttributes) requestAttributes;
             HandlerExecutionChain handlerChain = requestMappingHandlerMapping.getHandler(sra.getRequest());
             assert handlerChain != null;
-            HandlerMethod handler = (HandlerMethod) handlerChain.getHandler();
-            return handler.getMethod();
+            HandlerMethod handlerMethod = (HandlerMethod) handlerChain.getHandler();
+            return handlerMethod.getMethod();
         } catch (Exception e) {
             throw new GracefulResponseException("获取当前Controller方法失败", e);
         }
     }
 
-    private ResponseStatus handleConstraintViolationException(Exception e) {
+    private ResponseStatus handleConstraintViolationException(Exception e, @Nullable Object handler) {
 
         ConstraintViolationException exception = (ConstraintViolationException) e;
         Set<ConstraintViolation<?>> violationSet = exception.getConstraintViolations();
         String msg = violationSet.stream().map(s -> s.getConstraintDescriptor().getMessageTemplate()).collect(Collectors.joining(";"));
         String code;
-        ValidationStatusCode validationStatusCode = this.findValidationStatusCodeInController();
+        ValidationStatusCode validationStatusCode = this.findValidationStatusCodeInController(handler);
         if (validationStatusCode != null) {
             code = validationStatusCode.code();
-            return responseStatusFactory.newInstance(code, msg);
+            if (StringUtils.hasLength(code)) {
+                return responseStatusFactory.newInstance(code, msg);
+            }
         }
         //默认的参数异常码
         code = properties.getDefaultValidateErrorCode();
@@ -310,8 +317,8 @@ public class DefaultValidationExceptionAdvice extends AbstractControllerAdvice
      * @return
      * @throws Exception
      */
-    private ValidationStatusCode findValidationStatusCodeInController() {
-        Method method = this.currentControllerMethod();
+    private ValidationStatusCode findValidationStatusCodeInController(@Nullable Object handler) {
+        Method method = this.currentControllerMethod(handler);
         //Controller方法上的注解
         ValidationStatusCode validateStatusCode = method.getAnnotation(ValidationStatusCode.class);
         //Controller类上的注解
