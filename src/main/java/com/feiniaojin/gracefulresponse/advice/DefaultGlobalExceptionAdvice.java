@@ -12,6 +12,7 @@ import com.feiniaojin.gracefulresponse.api.ResponseStatusFactory;
 import com.feiniaojin.gracefulresponse.data.ExceptionAliasConfig;
 import com.feiniaojin.gracefulresponse.data.Response;
 import com.feiniaojin.gracefulresponse.data.ResponseStatus;
+import com.feiniaojin.gracefulresponse.defaults.DefaultConstants;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -145,20 +146,22 @@ public class DefaultGlobalExceptionAdvice extends AbstractControllerAdvice imple
             //优先取配置文件的异常别名
             Map<Class<?>, ExceptionAliasConfig> exceptionAliasConfigMap = properties.getExceptionAliasConfigMap();
             Class<? extends Throwable> aClass = throwable.getClass();
-            if (!CollectionUtils.isEmpty(exceptionAliasConfigMap)
-                    && Objects.nonNull(exceptionAliasConfigMap.get(aClass))
-                    && Objects.nonNull(exceptionAliasConfigMap.get(aClass).getHttpStatusCode())) {
-                httpStatusCode = HttpStatusCode.valueOf(exceptionAliasConfigMap.get(aClass).getHttpStatusCode());
+            ExceptionAliasConfig aliasConfig = CollectionUtils.isEmpty(exceptionAliasConfigMap)
+                ? null : exceptionAliasConfigMap.get(aClass);
+            if (aliasConfig != null && aliasConfig.getHttpStatusCode() != null) {
+                httpStatusCode = HttpStatusCode.valueOf(aliasConfig.getHttpStatusCode());
             } else {
                 //取代码中注册的异常别名
-                ExceptionAliasFor exceptionAliasFor = exceptionAliasRegister.getExceptionAliasFor(throwable.getClass());
+                ExceptionAliasFor exceptionAliasFor = Objects.isNull(exceptionAliasRegister)
+                    ? null : exceptionAliasRegister.getExceptionAliasFor(aClass);
                 if (exceptionAliasFor != null
                         && exceptionAliasFor.httpStatusCode() > 0) {
                     httpStatusCode = HttpStatusCode.valueOf(exceptionAliasFor.httpStatusCode());
                 } else {
-                    //取用户配置的默认错误码
+                    //取用户配置的默认错误码，为空时兜底，避免拆箱NPE
                     Integer defaultHttpStatusCodeOnError = properties.getDefaultHttpStatusCodeOnError();
-                    httpStatusCode = HttpStatusCode.valueOf(defaultHttpStatusCodeOnError);
+                    httpStatusCode = HttpStatusCode.valueOf(Objects.isNull(defaultHttpStatusCodeOnError)
+                        ? DefaultConstants.DEFAULT_HTTP_STATUS_CODE_ON_ERROR : defaultHttpStatusCodeOnError);
                 }
             }
         }

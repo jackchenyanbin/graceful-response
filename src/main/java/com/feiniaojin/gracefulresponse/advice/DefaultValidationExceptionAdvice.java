@@ -10,6 +10,7 @@ import com.feiniaojin.gracefulresponse.api.ResponseStatusFactory;
 import com.feiniaojin.gracefulresponse.api.ValidationStatusCode;
 import com.feiniaojin.gracefulresponse.data.Response;
 import com.feiniaojin.gracefulresponse.data.ResponseStatus;
+import com.feiniaojin.gracefulresponse.defaults.DefaultConstants;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -357,7 +358,9 @@ public class DefaultValidationExceptionAdvice extends AbstractControllerAdvice
                 //默认的http状态码
                 httpStatusCodeInt = properties.getDefaultHttpStatusCodeOnError();
             }
-            httpStatusCode = HttpStatusCode.valueOf(httpStatusCodeInt);
+            //仍为空时兜底，避免拆箱NPE
+            httpStatusCode = HttpStatusCode.valueOf(Objects.isNull(httpStatusCodeInt)
+                ? DefaultConstants.DEFAULT_HTTP_STATUS_CODE_ON_ERROR : httpStatusCodeInt);
         }
 
         return new ResponseEntity<>(response, httpStatusCode);

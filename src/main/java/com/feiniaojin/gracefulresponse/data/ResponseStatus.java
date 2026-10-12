@@ -32,8 +32,6 @@ public interface ResponseStatus {
 
     /**
      * 获得响应信息.
-     *
-     * @return
      */
     String getMsg();
 }

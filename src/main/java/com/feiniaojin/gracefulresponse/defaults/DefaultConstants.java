@@ -31,4 +31,9 @@ public class DefaultConstants {
      */
     public static final String DEFAULT_ERROR_MSG = "error";
 
+    /**
+     * 发生错误时默认的HTTP状态码，用于配置缺失时的兜底
+     */
+    public static final int DEFAULT_HTTP_STATUS_CODE_ON_ERROR = 200;
+
 }

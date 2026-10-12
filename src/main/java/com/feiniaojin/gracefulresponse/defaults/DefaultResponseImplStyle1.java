@@ -38,18 +38,24 @@ public class DefaultResponseImplStyle1 implements Response {
     }
 
     public String getCode() {
-        return this.status.getCode();
+        return this.status == null ? null : this.status.getCode();
     }
 
     public void setCode(String code) {
+        if (this.status == null) {
+            this.status = new DefaultResponseStatus();
+        }
         this.status.setCode(code);
     }
 
     public String getMsg() {
-        return this.status.getMsg();
+        return this.status == null ? null : this.status.getMsg();
     }
 
     public void setMsg(String msg) {
+        if (this.status == null) {
+            this.status = new DefaultResponseStatus();
+        }
         this.status.setMsg(msg);
     }
 
