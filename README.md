@@ -25,10 +25,10 @@ star!
 
 项目及案例代码仓库如下:
 
-| Spring Boot 版本 | 项目                                                 | 案例                                                         |
-|----------------|----------------------------------------------------|------------------------------------------------------------|
-| 3.x            | <https://github.com/feiniaojin/graceful-response>  | <https://github.com/feiniaojin/graceful-response-example>  |
-| 2.x            | <https://github.com/feiniaojin/graceful-response2> | <https://github.com/feiniaojin/graceful-response2-example> |
+| Spring Boot 版本 | 项目                                               | 案例                                                       |
+|------------------|----------------------------------------------------|------------------------------------------------------------|
+| 4.x              | <https://github.com/feiniaojin/graceful-response>  | <https://github.com/feiniaojin/graceful-response-example>  |
+| 2.x              | <https://github.com/feiniaojin/graceful-response2> | <https://github.com/feiniaojin/graceful-response2-example> |
 
 学习资源：
 
@@ -84,7 +84,8 @@ star!
 </dependency>
 ```
 
-**版本选择**：请到中央仓库选择最新的版本，boot2 和 boot3 有不用的 GAV。
+**版本选择**：请到中央仓库选择最新的版本。boot2 为独立 artifactId（graceful-response2）；boot3、boot4 共用
+artifactId（graceful-response），以版本后缀 -boot3 / -boot4 区分。本仓库当前基于 Spring Boot 4.1.x + JDK 25 构建。
 
 > 仓库链接：<https://central.sonatype.com/artifact/com.feiniaojin/graceful-response>
 

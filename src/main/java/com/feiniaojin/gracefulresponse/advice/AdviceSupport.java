@@ -5,8 +5,8 @@ import com.feiniaojin.gracefulresponse.api.ExcludeFromGracefulResponse;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.converter.AbstractJacksonHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter;
 import org.springframework.http.converter.json.AbstractJsonHttpMessageConverter;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.CollectionUtils;
@@ -38,7 +38,7 @@ public class AdviceSupport {
      */
     public boolean isJsonHttpMessageConverter(Class<? extends HttpMessageConverter<?>> clazz) {
         return AbstractJsonHttpMessageConverter.class.isAssignableFrom(clazz)
-                || AbstractJackson2HttpMessageConverter.class.isAssignableFrom(clazz)
+            || AbstractJacksonHttpMessageConverter.class.isAssignableFrom(clazz)
                 || clazz.getName().equals(properties.getJsonHttpMessageConverter());
     }
 
